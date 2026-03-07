@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>城市韧性评估方法论说明</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- MathJax for formula rendering -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e40af', // blue-800
+                        secondary: '#3b82f6', // blue-500
+                        surface: '#f8fafc', // slate-50
+                    },
+                    fontFamily: {
+                        sans: ['"PingFang SC"', '"Microsoft YaHei"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+
+        // ==========================================
+        // 参考文献配置区 - 统一在此处修改参考文献内容
+        // ==========================================
+        const references = {
+            "ref-comm-density": "文献支撑: Chen et al. (2024). Wireless Node Density.",
+            "ref-gas-buffer": "文献支撑: Wang, Y. (2023). Gas Pipeline Buffer Capacity.",
+            "ref-rail-transit": "文献支撑: Li, H. et al. (2025). Exposure Intensity in Rail Transit.",
+            "ref-traffic-activity": "文献支撑: Zhao, X. (2022). Comprehensive Traffic Activity.",
+            "ref-flood-recovery": "文献支撑: Liu, F. (2023). Flood Recovery Time.",
+            "ref-inundation-depth": "文献支撑: Zhang, M. et al. (2024). Maximum Inundation Depth.",
+            "ref-health-resource": "文献支撑: Sun, Y. (2022). Healthcare Resource Redundancy.",
+            "ref-health-manage": "文献支撑: Wu, K. et al. (2025). Synergistic Adaptation.",
+            "ref-exp-normalization": "参考文献: Epasto A, Mahdian M, Mirrokni V, et al. Optimal approximation-smoothness tradeoffs for soft-max functions[J]. Advances in Neural Information Processing Systems, 2020, 33: 2651-2660.",
+            "ref-entropy-theory": "参考文献: Shannon, C. E. (1948). A Mathematical Theory of Communication. Bell System Technical Journal."
+        };
+        // ==========================================
+    </script>
+    <style>
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        /* 锚点偏移，防止顶部被遮挡 */
+        section {
+            scroll-margin-top: 2rem;
+        }
+        .math-block {
+            overflow-x: auto;
+            padding: 1rem 0;
+        }
+        .calc-row, .calc-row-6 {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .calc-row:hover, .calc-row-6:hover {
+            background-color: #eff6ff !important; /* blue-50 */
+        }
+        .demo-box {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* 熵权法动画特定样式 */
+        .step-active {
+            border-color: #3b82f6 !important; /* secondary */
+            background-color: #eff6ff !important; /* blue-50 */
+        }
+        .val-highlight {
+            color: #ef4444 !important; /* red-500 */
+            font-weight: bold;
+            transform: scale(1.1);
+            transition: all 0.3s ease;
+        }
+        .progress-bar-fill {
+            transition: width 0.8s ease-in-out, background-color 0.8s ease;
+        }
+        
+        /* 背景图片样式 */
+        body {
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('Gemini_Generated_Image_jkkb9tjkkb9tjkkb.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.5;
+            z-index: -1;
+        }
+        
+        /* 增强卡片对比度以配合背景 */
+        aside, .bg-white {
+            background-color: rgba(255, 255, 255, 0.96) !important;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        
+        /* 主内容区域增加微妙的渐变叠加 */
+        main {
+            position: relative;
+        }
+        main::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3));
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        /* 确保内容在渐变之上 */
+        main > * {
+            position: relative;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased flex">
+
+    <!-- 左侧侧边栏导航 -->
+    <aside class="w-64 bg-white shadow-xl h-screen sticky top-0 flex flex-col z-20">
+        <div class="p-6 border-b border-slate-100">
+            <h1 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="shield-check" class="text-primary w-6 h-6"></i>
+                城市韧性评估
+            </h1>
+            <p class="text-xs text-slate-500 mt-2">方法论与指标体系说明</p>
+        </div>
+        <nav class="flex-1 overflow-y-auto p-4 space-y-1" id="nav-menu">
+            <a href="#" onclick="switchTab('section-1', this); return false;" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold bg-blue-50 text-primary transition-colors">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i> 板块一：项目概览
+            </a>
+            <a href="#" onclick="switchTab('section-2', this); return false;" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary transition-colors">
+                <i data-lucide="variable" class="w-4 h-4"></i> 板块二：外部性指标变量说明
+            </a>
+            <a href="#" onclick="switchTab('section-3', this); return false;" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary transition-colors">
+                <i data-lucide="database" class="w-4 h-4"></i> 板块三：外部性指标数据处理
+            </a>
+            <a href="#" onclick="switchTab('section-4', this); return false;" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary transition-colors">
+                <i data-lucide="line-chart" class="w-4 h-4"></i> 板块四：预测性指标处理
+            </a>
+            <a href="#" onclick="switchTab('section-5', this); return false;" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary transition-colors">
+                <i data-lucide="calculator" class="w-4 h-4"></i> 板块五：四个专题韧性计算
+            </a>
+            <a href="#" onclick="switchTab('section-6', this); return false;" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary transition-colors">
+                <i data-lucide="globe" class="w-4 h-4"></i> 板块六：总体城市韧性计算
+            </a>
+            <a href="#" onclick="switchTab('section-7', this); return false;" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary transition-colors">
+                <i data-lucide="book-open" class="w-4 h-4"></i> 板块七：熵权法的说明
+            </a>
+        </nav>
+        <div class="p-4 border-t border-slate-100 text-xs text-slate-400 text-center">
+            &copy; 2026 城市韧性研究课题组（MQ）
+        </div>
+    </aside>
+
+    <!-- 右侧主体内容 -->
+    <main class="flex-1 p-8 md:p-12 max-w-5xl">
+        
+        <!-- 板块一 -->
+        <section id="section-1" class="tab-content block">
+            <h2 class="text-3xl font-bold text-slate-900 mb-6 pb-2 border-b border-slate-200">板块一：项目概览</h2>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-6">
+                <h3 class="text-lg font-semibold text-primary mb-3 flex items-center gap-2">
+                    <i data-lucide="target" class="w-5 h-5"></i> 核心目标
+                </h3>
+                <p class="text-slate-600 leading-relaxed">
+                    我们需要得到某个城市（以<strong>北京</strong>为例）在某一个时间（月份）的城市综合韧性水平，以此作为评估城市系统应对外部冲击和恢复能力的科学依据。
+                </p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-6">
+                <h3 class="text-lg font-semibold text-primary mb-3 flex items-center gap-2">
+                    <i data-lucide="network" class="w-5 h-5"></i> 方法论概述
+                </h3>
+                <p class="text-slate-600 leading-relaxed mb-4">
+                    采用该城市四个维度的韧性（<strong>基础设施韧性、交通运输韧性、生态环境韧性、公共卫生韧性</strong>）进行整合。整合方法采用<strong>综合赋权法（含熵权法）</strong>。
+                </p>
+                <div class="p-4 bg-slate-50 rounded-lg border border-slate-100 text-sm text-slate-500">
+                    注：综合赋权法及熵权法的理论介绍详见 <a href="#" onclick="switchTab('section-7', document.querySelectorAll('.nav-link')[6]); return false;" class="text-secondary hover:underline cursor-pointer">板块七</a>。
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+                <h3 class="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
+                    <i data-lucide="table" class="w-5 h-5"></i> 指标选取框架
+                </h3>
+                <p class="text-slate-600 leading-relaxed mb-4">
+                    每个方面作为一个“课题”，各个课题分别计算韧性。每个课题代表性指标的选择如下表所示：每个课题均包含<strong>两个外部性指标</strong>（主要基于经济理论和专家判断选取）和<strong>一个预测性指标</strong>（采用概念神经网络模型客观计算得出）。
+                </p>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700">
+                                <th class="px-4 py-3 border border-slate-200 font-semibold rounded-tl-lg">课题名称</th>
+                                <th class="px-4 py-3 border border-slate-200 font-semibold">外部性指标 1</th>
+                                <th class="px-4 py-3 border border-slate-200 font-semibold">外部性指标 2</th>
+                                <th class="px-4 py-3 border border-slate-200 font-semibold rounded-tr-lg">预测性指标</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-slate-600">
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-4 py-3 border border-slate-200 font-medium text-slate-800">课题一：基础设施</td>
+                                <td class="px-4 py-3 border border-slate-200">通信基础设施覆盖韧性</td>
+                                <td class="px-4 py-3 border border-slate-200">城市燃气基础设施承载韧性</td>
+                                <td class="px-4 py-3 border border-slate-200 text-primary">设施服务韧性预测值*</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-4 py-3 border border-slate-200 font-medium text-slate-800">课题二：交通运输</td>
+                                <td class="px-4 py-3 border border-slate-200">城市轨道交通运行承载韧性</td>
+                                <td class="px-4 py-3 border border-slate-200">城市综合交通系统运行韧性</td>
+                                <td class="px-4 py-3 border border-slate-200 text-primary">交通流量韧性预测值</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-4 py-3 border border-slate-200 font-medium text-slate-800">课题三：生态环境</td>
+                                <td class="px-4 py-3 border border-slate-200">城市排水系统恢复韧性</td>
+                                <td class="px-4 py-3 border border-slate-200">城市排水系统抗冲击韧性</td>
+                                <td class="px-4 py-3 border border-slate-200 text-primary">生态承载韧性预测值</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-4 py-3 border border-slate-200 font-medium text-slate-800">课题四：公共医疗</td>
+                                <td class="px-4 py-3 border border-slate-200">公共卫生服务资源保障韧性</td>
+                                <td class="px-4 py-3 border border-slate-200">公共治理与应急协同韧性</td>
+                                <td class="px-4 py-3 border border-slate-200 text-primary">医疗服务韧性预测值</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">* 相关详细内容请见（板块二及板块四）</p>
+            </div>
+        </section>
+
+        <!-- 板块二 -->
+        <section id="section-2" class="tab-content hidden">
+            <h2 class="text-3xl font-bold text-slate-900 mb-6 pb-2 border-b border-slate-200">板块二：外部性指标变量说明</h2>
+            
+            <div class="space-y-6">
+                <!-- 课题一：基础设施 -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="bg-slate-50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
+                        <div class="p-2 bg-blue-100 rounded-lg text-primary"><i data-lucide="radio-tower" class="w-5 h-5"></i></div>
+                        <h3 class="text-xl font-bold text-slate-800">课题一：基础设施</h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <!-- 指标 1 -->
+                            <div class="border border-slate-100 rounded-lg p-5 hover:shadow-md transition-shadow relative pb-14">
+                                <h4 class="font-semibold text-lg text-slate-800 mb-2">通信基础设施覆盖韧性</h4>
+                                <div class="mb-3 text-sm"><span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-medium">代理变量：移动电话普及率 (部/百人)</span></div>
+                                <p class="text-sm text-slate-600 leading-relaxed">
+                                    <strong>物理意义：</strong>它量化了“当灾害瞬间切断部分基站或光纤时，城市仍能保有的最低可接入通信节点密度”。每一台在网手机都是一条潜在的应急通信链路；普及率越高，意味着单位面积内可独立发起求救、接收指令、上传灾情的“无线终端”越多。
+                                </p>
+                                <div class="absolute bottom-4 left-5 right-5">
+                                    <div class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-700 text-xs rounded border border-indigo-100 cursor-default hover:bg-indigo-100 transition-colors">
+                                        <i data-lucide="book-check" class="w-4 h-4"></i>
+                                        <span class="truncate" data-ref="ref-comm-density"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 指标 2 -->
+                            <div class="border border-slate-100 rounded-lg p-5 hover:shadow-md transition-shadow relative pb-14">
+                                <h4 class="font-semibold text-lg text-slate-800 mb-2">城市燃气基础设施承载韧性</h4>
+                                <div class="mb-3 text-sm"><span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-medium">代理变量：供气管道长度 (万公里)</span></div>
+                                <p class="text-sm text-slate-600 leading-relaxed">
+                                    <strong>物理意义：</strong>它量化了“在气源瞬降或管段爆裂时，系统可依赖的‘空间-时间’缓冲容量”。管道越长，总容积越大，形成“气体弹簧”效应：上游突然停气，管线内高压存量可反向膨胀供能，为调度、抢修、切换气源赢得数十分钟至数小时的“惯性时间”。
+                                </p>
+                                <div class="absolute bottom-4 left-5 right-5">
+                                    <div class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-700 text-xs rounded border border-indigo-100 cursor-default hover:bg-indigo-100 transition-colors">
+                                        <i data-lucide="book-check" class="w-4 h-4"></i>
+                                        <span class="truncate" data-ref="ref-gas-buffer"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-blue-50/50 border border-blue-100 p-4 rounded-lg flex items-start gap-3">
+                            <i data-lucide="info" class="w-5 h-5 text-secondary mt-0.5 shrink-0"></i>
+                            <div class="text-sm text-slate-700">
+                                <strong>总结与数据来源：</strong>数据来源于北京市通信管理局、北京市城市管理委员会、北京市统计局、中国互联网络信息中心(CNNIC)。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 课题二：交通运输 -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="bg-slate-50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
+                        <div class="p-2 bg-emerald-100 rounded-lg text-emerald-700"><i data-lucide="train" class="w-5 h-5"></i></div>
+                        <h3 class="text-xl font-bold text-slate-800">课题二：交通运输</h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <!-- 指标 1 -->
+                            <div class="border border-slate-100 rounded-lg p-5 hover:shadow-md transition-shadow relative pb-14">
+                                <h4 class="font-semibold text-lg text-slate-800 mb-2">城市轨道交通运行承载韧性</h4>
+                                <div class="mb-3 text-sm"><span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-medium">代理变量：城市轨道交通客运量 (万人次)</span></div>
+                                <p class="text-sm text-slate-600 leading-relaxed">
+                                    <strong>物理意义：</strong>用于表征轨道交通系统在月尺度上的运行暴露强度，其反映了系统在高负荷运行状态下人–设备–组织之间的交互频率，是影响轨道交通事故风险的重要外生因素。
+                                </p>
+                                <div class="absolute bottom-4 left-5 right-5">
+                                    <div class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-700 text-xs rounded border border-indigo-100 cursor-default hover:bg-indigo-100 transition-colors">
+                                        <i data-lucide="book-check" class="w-4 h-4"></i>
+                                        <span class="truncate" data-ref="ref-rail-transit"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 指标 2 -->
+                            <div class="border border-slate-100 rounded-lg p-5 hover:shadow-md transition-shadow relative pb-14">
+                                <h4 class="font-semibold text-lg text-slate-800 mb-2">城市综合交通系统运行韧性</h4>
+                                <div class="mb-3 text-sm"><span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-medium">代理变量：总客运量 (万人次)</span></div>
+                                <p class="text-sm text-slate-600 leading-relaxed">
+                                    <strong>物理意义：</strong>用于刻画城市交通系统在月尺度上的整体运行暴露水平，反映了不同交通方式共同作用下的系统活动强度，是多类型交通事故发生的关键外生驱动因素。
+                                </p>
+                                <div class="absolute bottom-4 left-5 right-5">
+                                    <div class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-700 text-xs rounded border border-indigo-100 cursor-default hover:bg-indigo-100 transition-colors">
+                                        <i data-lucide="book-check" class="w-4 h-4"></i>
+                                        <span class="truncate" data-ref="ref-traffic-activity"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-blue-50/50 border border-blue-100 p-4 rounded-lg flex items-start gap-3">
+                            <i data-lucide="info" class="w-5 h-5 text-secondary mt-0.5 shrink-0"></i>
+                            <div class="text-sm text-slate-700 leading-relaxed">
+                                <strong>总结与数据来源：</strong>数据均来源于中华人民共和国交通运输部。二者分别从系统局部与整体两个层面揭示了交通事故风险的外生驱动机制。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 课题三：生态环境 -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="bg-slate-50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
+                        <div class="p-2 bg-teal-100 rounded-lg text-teal-700"><i data-lucide="leaf" class="w-5 h-5"></i></div>
+                        <h3 class="text-xl font-bold text-slate-800">课题三：生态环境</h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <!-- 指标 1 -->
+                            <div class="border border-slate-100 rounded-lg p-5 hover:shadow-md transition-shadow relative pb-14">
+                                <h4 class="font-semibold text-lg text-slate-800 mb-2">城市排水系统恢复韧性</h4>
+                                <div class="mb-3 flex gap-2">
+                                    <span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-medium">代理变量：积水时间 (反向)</span>
+                                    <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">已正向化</span>
+                                </div>
+                                <p class="text-sm text-slate-600 leading-relaxed">
+                                    <strong>物理意义：</strong>积水时间指暴雨后积水消退所需时间，反映排水及生态缓冲的恢复韧性。时间越长，说明恢复过程越缓慢，对应的原始韧性越低。
+                                </p>
+                                <div class="absolute bottom-4 left-5 right-5">
+                                    <div class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-700 text-xs rounded border border-indigo-100 cursor-default hover:bg-indigo-100 transition-colors">
+                                        <i data-lucide="book-check" class="w-4 h-4"></i>
+                                        <span class="truncate" data-ref="ref-flood-recovery"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 指标 2 -->
+                            <div class="border border-slate-100 rounded-lg p-5 hover:shadow-md transition-shadow relative pb-14">
+                                <h4 class="font-semibold text-lg text-slate-800 mb-2">城市排水系统抗冲击韧性</h4>
+                                <div class="mb-3 flex gap-2">
+                                    <span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-medium">代理变量：积水深度 (反向)</span>
+                                    <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">已正向化</span>
+                                </div>
+                                <p class="text-sm text-slate-600 leading-relaxed">
+                                    <strong>物理意义：</strong>积水深度指单次降雨过程中的最大积水深度，反映排水承载与生态抗冲击韧性。深度越大，说明系统受到的物理冲击越严重，原始抗冲击韧性越低。
+                                </p>
+                                <div class="absolute bottom-4 left-5 right-5">
+                                    <div class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-700 text-xs rounded border border-indigo-100 cursor-default hover:bg-indigo-100 transition-colors">
+                                        <i data-lucide="book-check" class="w-4 h-4"></i>
+                                        <span class="truncate" data-ref="ref-inundation-depth"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-blue-50/50 border border-blue-100 p-4 rounded-lg flex items-start gap-3">
+                            <i data-lucide="info" class="w-5 h-5 text-secondary mt-0.5 shrink-0"></i>
+                            <div class="text-sm text-slate-700 leading-relaxed">
+                                <strong>数据来源与模拟机制：</strong>基于 InfoWorks ICM 构建北京市洪涝模型。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 课题四：公共医疗 -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="bg-slate-50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
+                        <div class="p-2 bg-rose-100 rounded-lg text-rose-700"><i data-lucide="hospital" class="w-5 h-5"></i></div>
+                        <h3 class="text-xl font-bold text-slate-800">课题四：公共医疗</h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2">
+                            <!-- 指标 1 -->
+                            <div class="border border-slate-100 rounded-lg p-5 hover:shadow-md transition-shadow relative pb-14">
+                                <h4 class="font-semibold text-lg text-slate-800 mb-2">公共卫生服务资源保障韧性</h4>
+                                <div class="mb-3 text-sm"><span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-medium">代理变量：资源韧性</span></div>
+                                <p class="text-sm text-slate-600 leading-relaxed">
+                                    <strong>物理意义：</strong>主要反映一个地区医疗资源“量”和“强度”的充足程度。该韧性越高，说明医疗系统在灾害和不确定冲击下具备更强的基础承载能力。
+                                </p>
+                                <div class="absolute bottom-4 left-5 right-5">
+                                    <div class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-700 text-xs rounded border border-indigo-100 cursor-default hover:bg-indigo-100 transition-colors">
+                                        <i data-lucide="book-check" class="w-4 h-4"></i>
+                                        <span class="truncate" data-ref="ref-health-resource"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 指标 2 -->
+                            <div class="border border-slate-100 rounded-lg p-5 hover:shadow-md transition-shadow relative pb-14">
+                                <h4 class="font-semibold text-lg text-slate-800 mb-2">公共治理与应急协同韧性</h4>
+                                <div class="mb-3 text-sm"><span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-medium">代理变量：管理韧性</span></div>
+                                <p class="text-sm text-slate-600 leading-relaxed">
+                                    <strong>物理意义：</strong>强调医疗系统在治理结构和运行效率层面的适应与协同能力。韧性越高，表示在突发事件中，系统能通过高效的资源调度实现对患者的快速响应。
+                                </p>
+                                <div class="absolute bottom-4 left-5 right-5">
+                                    <div class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-700 text-xs rounded border border-indigo-100 cursor-default hover:bg-indigo-100 transition-colors">
+                                        <i data-lucide="book-check" class="w-4 h-4"></i>
+                                        <span class="truncate" data-ref="ref-health-manage"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 板块三 -->
+        <section id="section-3" class="tab-content hidden">
+            <h2 class="text-3xl font-bold text-slate-900 mb-6 pb-2 border-b border-slate-200">板块三：外部性指标数据处理</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Card 1 -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-3 mb-3">
+                        <i data-lucide="calendar-clock" class="text-primary w-5 h-5"></i>
+                        <h4 class="font-semibold text-slate-800">1. 数据补齐 (频率对齐)</h4>
+                    </div>
+                    <ul class="text-sm text-slate-600 space-y-2 list-disc list-inside">
+                        <li><strong>季度数据：</strong> 采用线性插值法补充至月份。</li>
+                        <li><strong>年度数据：</strong> 统一全月份一致处理。</li>
+                        <li><strong>缺失月份：</strong> 采用该变量的<strong>中位数补充</strong>。（中位数相较于均值更能抵抗极端异常值的影响）。</li>
+                    </ul>
+                </div>
+                <!-- Card 2 -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-3 mb-3">
+                        <i data-lucide="minimize-2" class="text-primary w-5 h-5"></i>
+                        <h4 class="font-semibold text-slate-800">2. 数据归一化</h4>
+                    </div>
+                    <p class="text-sm text-slate-600 mb-2">消除不同量纲带来的影响，采用 <strong>Min-Max 归一化</strong>将所有数值映射到 [0, 1] 区间。</p>
+                    <div class="math-block text-xs bg-slate-50 p-2 rounded">
+                        \[ X_{norm} = \frac{X - X_{min}}{X_{max} - X_{min}} \]
+                    </div>
+                </div>
+                <!-- Card 3 -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-3 mb-3">
+                        <i data-lucide="arrow-left-right" class="text-primary w-5 h-5"></i>
+                        <h4 class="font-semibold text-slate-800">3. 反向指标正向化</h4>
+                    </div>
+                    <p class="text-sm text-slate-600 mb-2">部分指标（如“城市排水系统恢复韧性（反向）”、“城市排水系统抗冲击韧性（反向）”）数值越小代表韧性越强，这与正向指标（数值越大越好）矛盾。我们采用线性变换将其统一为正向指标：</p>
+                    <div class="math-block text-xs bg-slate-50 p-2 rounded mb-2">
+                        \[ X_{new} = 1 - X_{old} \]
+                    </div>
+                    <p class="text-sm text-slate-600"><strong>目的：</strong>确保所有指标在后续计算中具有同向性，即数值越大，代表城市韧性越高。</p>
+                </div>
+                <!-- Card 4 -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-3 mb-3">
+                        <i data-lucide="activity" class="text-primary w-5 h-5"></i>
+                        <h4 class="font-semibold text-slate-800">4. 数据再平滑处理</h4>
+                    </div>
+                    <p class="text-sm text-slate-600 mb-2">为了避免数据中出现绝对的 0（这在数学计算中可能导致除零错误或对数无意义，且在现实中“零韧性”几乎不存在），我们引入了<strong>拉普拉斯平滑思想</strong>：</p>
+                    <div class="math-block text-xs bg-slate-50 p-2 rounded mb-2">
+                        \[ X_{smooth} = \frac{X + \alpha}{1 + \alpha} \quad (\text{其中 } \alpha = 0.01) \]
+                    </div>
+                    <p class="text-sm text-slate-600"><strong>意义：</strong>给分子分母同时加上一个微小的偏移量 \(\alpha\)。这不仅解决了数学运算的边界问题，也符合“即使发生灾害，城市仍保留基础生存能力”的现实逻辑。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 板块四 -->
+        <section id="section-4" class="tab-content hidden">
+            <h2 class="text-3xl font-bold text-slate-900 mb-6 pb-2 border-b border-slate-200">板块四：预测性指标变量与数据处理</h2>
+            <div class="space-y-8">
+                
+                <!-- 步骤一 -->
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <span class="bg-primary text-white w-7 h-7 rounded-lg flex items-center justify-center text-sm shadow">1</span>
+                        步骤一：各课题预测性指标说明
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- 课题一 -->
+                        <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                            <div class="flex items-center gap-2 mb-3 text-blue-700">
+                                <i data-lucide="radio-tower" class="w-5 h-5"></i>
+                                <h4 class="font-bold">课题一：基础设施</h4>
+                            </div>
+                            <div class="mb-3"><span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-medium">预测性指标：设施服务韧性</span></div>
+                            <p class="text-sm text-slate-600 leading-relaxed mb-3">基于用水普及率、建成区供水及排水管道密度、人均道路面积、再生水管道长度以及全年用电量等多维特征数据，通过模型预测得出。</p>
+                            <div class="bg-blue-50 p-3 rounded text-sm text-slate-700 border border-blue-100">
+                                <strong>预测结果：</strong>划分为 4 个韧性等级 (0-3)，等级越高代表韧性越强。综合反映了城市生命线系统的服务保障能力、网络冗余度及运行稳定性。
+                            </div>
+                        </div>
+
+                        <!-- 课题二 -->
+                        <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                            <div class="flex items-center gap-2 mb-3 text-emerald-700">
+                                <i data-lucide="train" class="w-5 h-5"></i>
+                                <h4 class="font-bold">课题二：交通运输</h4>
+                            </div>
+                            <div class="mb-3"><span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-medium">预测性指标：交通风险抵御韧性</span></div>
+                            <p class="text-sm text-slate-600 leading-relaxed mb-3">基于突发事件的持续时间、伤亡人数、设施损坏程度、恢复时间以及时间因素（月份）等关键维度，通过模型预测得出。</p>
+                            <div class="bg-emerald-50 p-3 rounded text-sm text-slate-700 border border-emerald-100">
+                                <strong>预测结果：</strong>对应 5 个等级 (0-特大事故风险, 1-重大, 2-较大, 3-一般, 4-正常运行)。反映了城市交通系统在面对突发事故或压力时的抗冲击及恢复能力。
+                            </div>
+                        </div>
+
+                        <!-- 课题三 -->
+                        <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                            <div class="flex items-center gap-2 mb-3 text-teal-700">
+                                <i data-lucide="leaf" class="w-5 h-5"></i>
+                                <h4 class="font-bold">课题三：生态环境</h4>
+                            </div>
+                            <div class="mb-3"><span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-medium">预测性指标：生态健康韧性</span></div>
+                            <p class="text-sm text-slate-600 leading-relaxed mb-3">基于 PM2.5、PM10、SO2、NO2、O3 及 CO 等六项关键空气污染物浓度数据，通过模型预测得出。</p>
+                            <div class="bg-teal-50 p-3 rounded text-sm text-slate-700 border border-teal-100">
+                                <strong>预测结果：</strong>分为优 (1) 和良 (0) 两个等级。直观反映了城市生态环境系统的空气质量状况及自我净化能力。
+                            </div>
+                        </div>
+
+                        <!-- 课题四 -->
+                        <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                            <div class="flex items-center gap-2 mb-3 text-rose-700">
+                                <i data-lucide="hospital" class="w-5 h-5"></i>
+                                <h4 class="font-bold">课题四：公共医疗</h4>
+                            </div>
+                            <div class="mb-3"><span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-medium">预测性指标：医疗服务韧性</span></div>
+                            <p class="text-sm text-slate-600 leading-relaxed mb-3">基于医院及卫生院床位数、执业医师数量、基本养老保险参保人数及卫生福利业从业人员规模等数据，通过模型预测得出。</p>
+                            <div class="bg-rose-50 p-3 rounded text-sm text-slate-700 border border-rose-100">
+                                <strong>预测结果：</strong>划分为 4 个等级 (0-3)。综合反映了城市公共医疗体系的资源充裕度及应对危机的潜在承载力。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 步骤二 (更新后) -->
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <span class="bg-primary text-white w-7 h-7 rounded-lg flex items-center justify-center text-sm shadow">2</span>
+                        步骤二：模型预测验证
+                    </h3>
+                    <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm border-l-4 border-l-secondary relative overflow-hidden">
+                        <i data-lucide="cpu" class="absolute -right-4 -bottom-4 w-24 h-24 text-slate-50 opacity-50"></i>
+                        <h4 class="font-bold text-slate-800 mb-4">概念神经网络 (Conceptual Neural Network)</h4>
+                        <p class="text-sm text-slate-600 leading-relaxed relative z-10 mb-4">
+                            本研究中的预测性指标采用<strong>概念神经网络方法</strong>进行计算。相较于传统静态预测方法，该方法兼顾了特征表达、样本差异识别与模型动态更新，更适用于需要连续预测和滚动修正的应用场景。其核心运行逻辑如下：
+                        </p>
+                        <ul class="text-sm text-slate-600 space-y-3 relative z-10 list-disc list-inside ml-2">
+                            <li><strong>双重特征表示：</strong>首先对原始数据进行整理，将样本的“特征信息”与“样本重要性”共同纳入模型表示，使模型不仅能识别样本具有什么特征，还能区分哪些样本更具代表性。</li>
+                            <li><strong>加权训练网络：</strong>随后利用带权重的神经网络进行训练，构建具备高鲁棒性的初始预测模型。</li>
+                            <li><strong>动态滚动更新：</strong>在此基础上，模型可对新进入的数据持续开展预测与更新，从而大幅提升对城市动态变化的适应能力。</li>
+                        </ul>
+                        <div class="mt-5 p-3 bg-blue-50/80 text-blue-800 text-sm rounded border border-blue-100 relative z-10 flex items-start gap-2">
+                            <i data-lucide="info" class="w-4 h-4 mt-0.5 shrink-0"></i>
+                            <div><strong>具体应用：</strong>本文以全国范围内 2024 年及以前的历史数据作为训练样本，对 2025 年北京各月份的风险与韧性等级进行预测。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 步骤三 -->
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <span class="bg-primary text-white w-7 h-7 rounded-lg flex items-center justify-center text-sm shadow">3</span>
+                        步骤三：预测结果处理 (指数归一化)
+                    </h3>
+                    <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm relative overflow-hidden pb-14">
+                        <p class="text-sm text-slate-600 leading-relaxed mb-4 relative z-10">
+                            由步骤一可知，模型输出的预测结果为离散的等级变量（如 0, 1, 2, 3 等）。为了将这些离散的等级数据与板块三中的连续型外部性指标进行融合，并作为板块五赋权法的输入，我们采用了<strong>指数归一化 (类似 Softmax 转换)</strong> 对预测结果进行处理。
+                        </p>
+                        
+                        <div class="math-block bg-slate-50 p-4 rounded-lg mb-6 flex justify-center border border-slate-100 relative z-10">
+                            \[ X'_{i} = \frac{e^{X_i}}{\sum_{j=1}^{n} e^{X_j}} \]
+                        </div>
+                        <p class="text-xs text-slate-500 text-center mb-6 -mt-2 relative z-10">注：其中 \( X_i \) 为某个月份的预测等级初始值，\( n \) 为评估的总月份数。</p>
+
+                        <h4 class="font-semibold text-slate-800 mb-3 text-sm flex items-center gap-2 relative z-10">
+                            <i data-lucide="lightbulb" class="w-4 h-4 text-amber-500"></i> 采用该指数归一化公式的核心理由：
+                        </h4>
+                        <div class="space-y-4 text-sm text-slate-600 relative z-10">
+                            <div class="flex gap-3">
+                                <div class="w-6 h-6 rounded bg-blue-100 text-primary flex items-center justify-center font-bold shrink-0">1</div>
+                                <div>
+                                    <strong class="text-slate-800">非线性放大与特征强化：</strong>
+                                    在灾害学与韧性理论中，韧性等级或风险的边际差异往往不是线性的。指数函数 \( e^{X_i} \) 能够将原本等距的离散等级进行非线性放大（例如，等级3与等级2的实际表现差异，往往远大于等级1与等级0的差异）。这种转换有效强化了高韧性（或高风险）状态在评估体系中的权重表现。
+                                </div>
+                            </div>
+                            <div class="flex gap-3">
+                                <div class="w-6 h-6 rounded bg-blue-100 text-primary flex items-center justify-center font-bold shrink-0">2</div>
+                                <div>
+                                    <strong class="text-slate-800">生成相对比重分布，完美适配熵权法：</strong>
+                                    该公式将绝对的预测等级数值，转化为了一个总和严格为 1 的相对比重分布（即转化为概率分布形式）。这不仅天然消除了量纲，更重要的是，转换后的数值严格大于 0。这直接满足了后续熵权法中特征比重 \( p_{ij} \) 的计算需求，彻底规避了在计算信息熵 \( \ln(p_{ij}) \) 时遇到零值导致数学崩溃的风险。
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 添加参考文献长条 -->
+                        <div class="absolute bottom-4 left-6 right-6 z-10">
+                            <div class="w-full flex items-center justify-start gap-2 px-4 py-2.5 bg-indigo-50 text-indigo-700 text-xs rounded-lg border border-indigo-100 cursor-default hover:bg-indigo-100 transition-colors">
+                                <i data-lucide="book-check" class="w-4 h-4 shrink-0"></i>
+                                <span class="truncate" data-ref="ref-exp-normalization"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 板块五 -->
+        <section id="section-5" class="tab-content hidden">
+            <h2 class="text-3xl font-bold text-slate-900 mb-6 pb-2 border-b border-slate-200">板块五：四个专题韧性计算</h2>
+            
+            <div class="mb-6">
+                <p class="text-slate-600 leading-relaxed mb-4">
+                    在此步骤中，我们以<strong>课题一（基础设施）</strong>为例，展示如何通过“综合赋权法”得出的权重，最终计算得出每个月的专题韧性得分。
+                </p>
+                <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6 text-sm text-blue-800 flex items-start gap-3">
+                    <i data-lucide="mouse-pointer-click" class="w-5 h-5 mt-0.5 shrink-0 text-secondary"></i>
+                    <div>
+                        <strong>交互演示提示：</strong><br>
+                        下面表格中的最后列“课题一基础设施韧性”是由当月前三列指标分别乘以底部的“综合权重”后加总得出。<br>
+                        <span class="inline-block mt-2 font-semibold text-primary px-2 py-1 bg-blue-100 rounded">✨ 请点击下方表格中的不同月份（行），查看对应的计算公式和动态拆解过程！</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据表格 -->
+            <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+                <table class="w-full text-sm text-center border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                            <th class="px-4 py-4 font-semibold w-1/5">月度</th>
+                            <th class="px-4 py-4 font-semibold w-1/5 text-blue-700 bg-blue-50/50">通信基础设施<br>覆盖韧性</th>
+                            <th class="px-4 py-4 font-semibold w-1/5 text-emerald-700 bg-emerald-50/50">城市燃气基础设施<br>承载韧性</th>
+                            <th class="px-4 py-4 font-semibold w-1/5 text-amber-600 bg-amber-50/50">设施服务韧性<br>(预测值)</th>
+                            <th class="px-4 py-4 font-bold w-1/5 bg-slate-50 border-l border-slate-200">课题一<br>基础设施韧性</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-slate-600 divide-y divide-slate-100">
+                        <tr class="calc-row hover:bg-slate-50" onclick="showCalcDemo('1月', 0.01, 0.01, 0.03, 0.01, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">1月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.01</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.01</td><td class="px-4 py-3 text-amber-600 bg-amber-50/20">0.03</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.01</td>
+                        </tr>
+                        <tr class="calc-row hover:bg-slate-50" onclick="showCalcDemo('2月', 0.15, 0.11, 0.03, 0.11, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">2月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.15</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.11</td><td class="px-4 py-3 text-amber-600 bg-amber-50/20">0.03</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.11</td>
+                        </tr>
+                        <tr class="calc-row hover:bg-slate-50" onclick="showCalcDemo('3月', 0.29, 0.19, 0.03, 0.20, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">3月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.29</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.19</td><td class="px-4 py-3 text-amber-600 bg-amber-50/20">0.03</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.20</td>
+                        </tr>
+                        <tr class="calc-row hover:bg-slate-50" onclick="showCalcDemo('4月', 0.43, 0.29, 0.03, 0.30, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">4月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.43</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.29</td><td class="px-4 py-3 text-amber-600 bg-amber-50/20">0.03</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.30</td>
+                        </tr>
+                        <tr class="calc-row hover:bg-slate-50" onclick="showCalcDemo('5月', 0.51, 0.39, 0.03, 0.38, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">5月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.51</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.39</td><td class="px-4 py-3 text-amber-600 bg-amber-50/20">0.03</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.38</td>
+                        </tr>
+                        <tr class="calc-row hover:bg-slate-50" onclick="showCalcDemo('6月', 0.60, 0.48, 0.03, 0.45, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">6月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.60</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.48</td><td class="px-4 py-3 text-amber-600 bg-amber-50/20">0.03</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.45</td>
+                        </tr>
+                        <tr class="calc-row hover:bg-slate-50" onclick="showCalcDemo('7月', 0.83, 0.72, 0.03, 0.64, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">7月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.83</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.72</td><td class="px-4 py-3 text-amber-600 bg-amber-50/20">0.03</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.64</td>
+                        </tr>
+                        <tr class="calc-row hover:bg-slate-50" onclick="showCalcDemo('8月', 0.88, 0.86, 0.03, 0.73, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">8月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.88</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.86</td><td class="px-4 py-3 text-amber-600 bg-amber-50/20">0.03</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.73</td>
+                        </tr>
+                        <tr class="calc-row hover:bg-slate-50" onclick="showCalcDemo('9月', 0.94, 1.00, 0.03, 0.82, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">9月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.94</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">1.00</td><td class="px-4 py-3 text-amber-600 bg-amber-50/20">0.03</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.82</td>
+                        </tr>
+                        <tr class="calc-row hover:bg-slate-50" onclick="showCalcDemo('10月', 1.00, 1.00, 0.03, 0.84, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">10月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">1.00</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">1.00</td><td class="px-4 py-3 text-amber-600 bg-amber-50/20">0.03</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.84</td>
+                        </tr>
+                        <tr class="calc-row hover:bg-slate-50" onclick="showCalcDemo('11月', 1.00, 1.00, 0.03, 0.84, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">11月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">1.00</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">1.00</td><td class="px-4 py-3 text-amber-600 bg-amber-50/20">0.03</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.84</td>
+                        </tr>
+                        <tr class="calc-row hover:bg-slate-50" onclick="showCalcDemo('12月', 1.00, 1.00, 0.03, 0.84, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">12月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">1.00</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">1.00</td><td class="px-4 py-3 text-amber-600 bg-amber-50/20">0.03</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.84</td>
+                        </tr>
+                    </tbody>
+                    <tfoot class="border-t-2 border-slate-300">
+                        <tr class="bg-slate-50 text-slate-500 text-xs">
+                            <td class="px-4 py-3 text-right">熵权法权重</td>
+                            <td class="px-4 py-3">0.44</td><td class="px-4 py-3">0.56</td><td class="px-4 py-3">0</td><td class="px-4 py-3 bg-slate-100 border-l border-slate-200"></td>
+                        </tr>
+                        <tr class="bg-slate-50 text-slate-500 text-xs border-t border-slate-100">
+                            <td class="px-4 py-3 text-right">平均权重</td>
+                            <td class="px-4 py-3">0.33</td><td class="px-4 py-3">0.33</td><td class="px-4 py-3">0.33</td><td class="px-4 py-3 bg-slate-100 border-l border-slate-200"></td>
+                        </tr>
+                        <tr class="bg-indigo-50 text-indigo-800 text-sm font-bold border-t border-indigo-200">
+                            <td class="px-4 py-4 text-right flex items-center justify-end gap-1"><i data-lucide="calculator" class="w-4 h-4"></i>综合权重</td>
+                            <td class="px-4 py-4">0.38</td><td class="px-4 py-4">0.45</td><td class="px-4 py-4">0.17</td>
+                            <td class="px-4 py-4 bg-indigo-100 border-l border-indigo-200">最终乘积权重</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- 动态计算演示面板 (默认隐藏) -->
+            <div id="calc-demo-panel" class="demo-box hidden opacity-0 translate-y-4">
+                <div class="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-6 shadow-xl relative overflow-hidden text-white border border-slate-700">
+                    <div class="absolute -right-4 -top-4 text-slate-700 opacity-30"><i data-lucide="function-square" class="w-32 h-32"></i></div>
+                    
+                    <h4 class="font-bold text-lg mb-4 flex items-center gap-2 relative z-10">
+                        <span id="demo-month" class="px-2 py-1 bg-primary text-white rounded text-sm font-semibold">--月</span>
+                        计算全过程拆解：
+                    </h4>
+                    
+                    <div class="flex flex-col md:flex-row items-center justify-between gap-4 relative z-10">
+                        <!-- 公式左侧部分 -->
+                        <div class="flex flex-1 flex-wrap items-center gap-3 text-sm md:text-base bg-slate-900/50 p-4 rounded-lg border border-slate-700 w-full md:w-auto">
+                            <!-- 指标1 -->
+                            <div class="flex flex-col items-center">
+                                <span class="text-xs text-blue-300 mb-1">通信指标</span>
+                                <div class="bg-slate-800 px-3 py-1.5 rounded text-blue-400 font-mono border border-slate-600 flex items-center gap-1">
+                                    <span id="demo-v1">0.00</span> 
+                                    <span class="text-slate-500 text-xs">× 0.38</span>
+                                </div>
+                            </div>
+                            <span class="text-slate-500 font-bold">+</span>
+                            <!-- 指标2 -->
+                            <div class="flex flex-col items-center">
+                                <span class="text-xs text-emerald-300 mb-1">燃气指标</span>
+                                <div class="bg-slate-800 px-3 py-1.5 rounded text-emerald-400 font-mono border border-slate-600 flex items-center gap-1">
+                                    <span id="demo-v2">0.00</span> 
+                                    <span class="text-slate-500 text-xs">× 0.45</span>
+                                </div>
+                            </div>
+                            <span class="text-slate-500 font-bold">+</span>
+                            <!-- 指标3 -->
+                            <div class="flex flex-col items-center">
+                                <span class="text-xs text-amber-300 mb-1">预测指标</span>
+                                <div class="bg-slate-800 px-3 py-1.5 rounded text-amber-400 font-mono border border-slate-600 flex items-center gap-1">
+                                    <span id="demo-v3">0.00</span> 
+                                    <span class="text-slate-500 text-xs">× 0.17</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 等号 -->
+                        <div class="text-2xl font-bold text-slate-500">=</div>
+
+                        <!-- 结果部分 -->
+                        <div class="bg-primary/20 border border-primary p-4 rounded-lg flex flex-col items-center justify-center min-w-[120px]">
+                            <span class="text-xs text-blue-200 mb-1">综合韧性</span>
+                            <span id="demo-result" class="text-3xl font-bold text-white font-mono">0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- 板块六 -->
+        <section id="section-6" class="tab-content hidden">
+            <h2 class="text-3xl font-bold text-slate-900 mb-6 pb-2 border-b border-slate-200">板块六：总体城市韧性计算</h2>
+            
+            <div class="mb-6">
+                <p class="text-slate-600 leading-relaxed mb-4">
+                    在此步骤中，我们将板块五计算得出的<strong>四个独立课题的韧性得分</strong>作为新的输入项，再次结合“综合赋权法”得出最终的一级权重，并加权计算出每个月的<strong>总体城市韧性得分</strong>。
+                </p>
+                <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mb-6 text-sm text-indigo-800 flex items-start gap-3">
+                    <i data-lucide="mouse-pointer-click" class="w-5 h-5 mt-0.5 shrink-0 text-secondary"></i>
+                    <div>
+                        <strong>交互演示提示：</strong><br>
+                        下面表格中的最后列“总体韧性”是由当月前四列指标分别乘以底部的“综合权重”后加总得出。<br>
+                        <span class="inline-block mt-2 font-semibold text-primary px-2 py-1 bg-indigo-100 rounded">✨ 请点击下方表格中的不同月份（行），查看多维度的聚合计算拆解过程！</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据表格 -->
+            <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+                <table class="w-full text-sm text-center border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                            <th class="px-4 py-4 font-semibold w-24 shrink-0">月度</th>
+                            <th class="px-4 py-4 font-semibold text-blue-700 bg-blue-50/50">课题一<br>基础设施韧性</th>
+                            <th class="px-4 py-4 font-semibold text-emerald-700 bg-emerald-50/50">课题二<br>交通运输韧性</th>
+                            <th class="px-4 py-4 font-semibold text-teal-700 bg-teal-50/50">课题三<br>生态环境韧性</th>
+                            <th class="px-4 py-4 font-semibold text-rose-700 bg-rose-50/50">课题四<br>公共医疗韧性</th>
+                            <th class="px-4 py-4 font-bold bg-slate-50 border-l border-slate-200">总体韧性</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-slate-600 divide-y divide-slate-100">
+                        <tr class="calc-row-6 hover:bg-slate-50 transition-all duration-200" onclick="showCalcDemo6('1月', 0.01, 0.10, 0.08, 0.51, 0.13, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">1月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.01</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.10</td><td class="px-4 py-3 text-teal-600 bg-teal-50/20">0.08</td><td class="px-4 py-3 text-rose-600 bg-rose-50/20">0.51</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.13</td>
+                        </tr>
+                        <tr class="calc-row-6 hover:bg-slate-50 transition-all duration-200" onclick="showCalcDemo6('2月', 0.11, 0.55, 0.08, 0.40, 0.22, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">2月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.11</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.55</td><td class="px-4 py-3 text-teal-600 bg-teal-50/20">0.08</td><td class="px-4 py-3 text-rose-600 bg-rose-50/20">0.40</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.22</td>
+                        </tr>
+                        <tr class="calc-row-6 hover:bg-slate-50 transition-all duration-200" onclick="showCalcDemo6('3月', 0.20, 0.56, 0.17, 0.67, 0.32, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">3月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.20</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.56</td><td class="px-4 py-3 text-teal-600 bg-teal-50/20">0.17</td><td class="px-4 py-3 text-rose-600 bg-rose-50/20">0.67</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.32</td>
+                        </tr>
+                        <tr class="calc-row-6 hover:bg-slate-50 transition-all duration-200" onclick="showCalcDemo6('4月', 0.30, 0.61, 0.20, 0.76, 0.38, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">4月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.30</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.61</td><td class="px-4 py-3 text-teal-600 bg-teal-50/20">0.20</td><td class="px-4 py-3 text-rose-600 bg-rose-50/20">0.76</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.38</td>
+                        </tr>
+                        <tr class="calc-row-6 hover:bg-slate-50 transition-all duration-200" onclick="showCalcDemo6('5月', 0.38, 0.54, 0.23, 0.57, 0.37, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">5月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.38</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.54</td><td class="px-4 py-3 text-teal-600 bg-teal-50/20">0.23</td><td class="px-4 py-3 text-rose-600 bg-rose-50/20">0.57</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.37</td>
+                        </tr>
+                        <tr class="calc-row-6 hover:bg-slate-50 transition-all duration-200" onclick="showCalcDemo6('6月', 0.45, 0.61, 0.28, 0.37, 0.40, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">6月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.45</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.61</td><td class="px-4 py-3 text-teal-600 bg-teal-50/20">0.28</td><td class="px-4 py-3 text-rose-600 bg-rose-50/20">0.37</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.40</td>
+                        </tr>
+                        <tr class="calc-row-6 hover:bg-slate-50 transition-all duration-200" onclick="showCalcDemo6('7月', 0.64, 0.82, 0.82, 0.61, 0.74, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">7月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.64</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.82</td><td class="px-4 py-3 text-teal-600 bg-teal-50/20">0.82</td><td class="px-4 py-3 text-rose-600 bg-rose-50/20">0.61</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.74</td>
+                        </tr>
+                        <tr class="calc-row-6 hover:bg-slate-50 transition-all duration-200" onclick="showCalcDemo6('8月', 0.73, 0.78, 0.86, 0.62, 0.78, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">8月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.73</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.78</td><td class="px-4 py-3 text-teal-600 bg-teal-50/20">0.86</td><td class="px-4 py-3 text-rose-600 bg-rose-50/20">0.62</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.78</td>
+                        </tr>
+                        <tr class="calc-row-6 hover:bg-slate-50 transition-all duration-200" onclick="showCalcDemo6('9月', 0.82, 0.42, 0.19, 0.45, 0.45, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">9月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.82</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.42</td><td class="px-4 py-3 text-teal-600 bg-teal-50/20">0.19</td><td class="px-4 py-3 text-rose-600 bg-rose-50/20">0.45</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.45</td>
+                        </tr>
+                        <tr class="calc-row-6 hover:bg-slate-50 transition-all duration-200" onclick="showCalcDemo6('10月', 0.84, 0.65, 0.12, 0.34, 0.45, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">10月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.84</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.65</td><td class="px-4 py-3 text-teal-600 bg-teal-50/20">0.12</td><td class="px-4 py-3 text-rose-600 bg-rose-50/20">0.34</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.45</td>
+                        </tr>
+                        <tr class="calc-row-6 hover:bg-slate-50 transition-all duration-200" onclick="showCalcDemo6('11月', 0.84, 0.52, 0.15, 0.58, 0.47, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">11月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.84</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.52</td><td class="px-4 py-3 text-teal-600 bg-teal-50/20">0.15</td><td class="px-4 py-3 text-rose-600 bg-rose-50/20">0.58</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.47</td>
+                        </tr>
+                        <tr class="calc-row-6 hover:bg-slate-50 transition-all duration-200" onclick="showCalcDemo6('12月', 0.84, 0.60, 0.08, 0.58, 0.46, this)">
+                            <td class="px-4 py-3 font-medium text-slate-800">12月</td>
+                            <td class="px-4 py-3 text-blue-600 bg-blue-50/20">0.84</td><td class="px-4 py-3 text-emerald-600 bg-emerald-50/20">0.60</td><td class="px-4 py-3 text-teal-600 bg-teal-50/20">0.08</td><td class="px-4 py-3 text-rose-600 bg-rose-50/20">0.58</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 bg-slate-50/50 border-l border-slate-100">0.46</td>
+                        </tr>
+                    </tbody>
+                    <tfoot class="border-t-2 border-slate-300">
+                        <tr class="bg-slate-50 text-slate-500 text-xs">
+                            <td class="px-4 py-3 text-right">熵权法权重</td>
+                            <td class="px-4 py-3">0.31</td><td class="px-4 py-3">0.09</td><td class="px-4 py-3">0.55</td><td class="px-4 py-3">0.04</td><td class="px-4 py-3 bg-slate-100 border-l border-slate-200"></td>
+                        </tr>
+                        <tr class="bg-slate-50 text-slate-500 text-xs border-t border-slate-100">
+                            <td class="px-4 py-3 text-right">平均权重</td>
+                            <td class="px-4 py-3">0.25</td><td class="px-4 py-3">0.25</td><td class="px-4 py-3">0.25</td><td class="px-4 py-3">0.25</td><td class="px-4 py-3 bg-slate-100 border-l border-slate-200"></td>
+                        </tr>
+                        <tr class="bg-indigo-50 text-indigo-800 text-sm font-bold border-t border-indigo-200">
+                            <td class="px-4 py-4 text-right flex items-center justify-end gap-1"><i data-lucide="calculator" class="w-4 h-4"></i>综合权重</td>
+                            <td class="px-4 py-4">0.28</td><td class="px-4 py-4">0.17</td><td class="px-4 py-4">0.40</td><td class="px-4 py-4">0.14</td>
+                            <td class="px-4 py-4 bg-indigo-100 border-l border-indigo-200">最终乘积权重</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- 动态计算演示面板 (默认隐藏) -->
+            <div id="calc-demo-panel-6" class="demo-box hidden opacity-0 translate-y-4 transition-all duration-400">
+                <div class="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-6 shadow-xl relative overflow-hidden text-white border border-slate-700">
+                    <div class="absolute -right-4 -top-4 text-slate-700 opacity-30"><i data-lucide="function-square" class="w-32 h-32"></i></div>
+                    
+                    <h4 class="font-bold text-lg mb-4 flex items-center gap-2 relative z-10">
+                        <span id="demo6-month" class="px-2 py-1 bg-primary text-white rounded text-sm font-semibold">--月</span>
+                        总体计算全过程拆解：
+                    </h4>
+                    
+                    <div class="flex flex-col xl:flex-row items-center justify-between gap-4 relative z-10">
+                        <!-- 公式左侧部分 (四项指标聚合) -->
+                        <div class="flex flex-1 flex-wrap justify-center items-center gap-2 md:gap-3 text-sm md:text-base bg-slate-900/50 p-4 rounded-lg border border-slate-700 w-full xl:w-auto">
+                            <!-- 课题一 -->
+                            <div class="flex flex-col items-center">
+                                <span class="text-xs text-blue-300 mb-1">基础设施</span>
+                                <div class="bg-slate-800 px-2 py-1.5 rounded text-blue-400 font-mono border border-slate-600 flex items-center gap-1">
+                                    <span id="demo6-v1">0.00</span> 
+                                    <span class="text-slate-500 text-[10px] md:text-xs">× 0.28</span>
+                                </div>
+                            </div>
+                            <span class="text-slate-500 font-bold">+</span>
+                            <!-- 课题二 -->
+                            <div class="flex flex-col items-center">
+                                <span class="text-xs text-emerald-300 mb-1">交通运输</span>
+                                <div class="bg-slate-800 px-2 py-1.5 rounded text-emerald-400 font-mono border border-slate-600 flex items-center gap-1">
+                                    <span id="demo6-v2">0.00</span> 
+                                    <span class="text-slate-500 text-[10px] md:text-xs">× 0.17</span>
+                                </div>
+                            </div>
+                            <span class="text-slate-500 font-bold">+</span>
+                            <!-- 课题三 -->
+                            <div class="flex flex-col items-center">
+                                <span class="text-xs text-teal-300 mb-1">生态环境</span>
+                                <div class="bg-slate-800 px-2 py-1.5 rounded text-teal-400 font-mono border border-slate-600 flex items-center gap-1">
+                                    <span id="demo6-v3">0.00</span> 
+                                    <span class="text-slate-500 text-[10px] md:text-xs">× 0.40</span>
+                                </div>
+                            </div>
+                            <span class="text-slate-500 font-bold">+</span>
+                            <!-- 课题四 -->
+                            <div class="flex flex-col items-center">
+                                <span class="text-xs text-rose-300 mb-1">公共医疗</span>
+                                <div class="bg-slate-800 px-2 py-1.5 rounded text-rose-400 font-mono border border-slate-600 flex items-center gap-1">
+                                    <span id="demo6-v4">0.00</span> 
+                                    <span class="text-slate-500 text-[10px] md:text-xs">× 0.14</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 等号 -->
+                        <div class="text-2xl font-bold text-slate-500 rotate-90 xl:rotate-0">=</div>
+
+                        <!-- 结果部分 -->
+                        <div class="bg-primary/20 border border-primary p-4 rounded-lg flex flex-col items-center justify-center min-w-[120px]">
+                            <span class="text-xs text-blue-200 mb-1">总体城市韧性</span>
+                            <span id="demo6-result" class="text-3xl font-bold text-white font-mono">0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 板块七 -->
+        <section id="section-7" class="tab-content hidden">
+            <h2 class="text-3xl font-bold text-slate-900 mb-6 pb-2 border-b border-slate-200">板块七：熵权法的说明</h2>
+            
+            <div class="space-y-6">
+                <!-- Why use EWM -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 relative overflow-hidden">
+                    <h3 class="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2 relative z-10">
+                        <span class="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span>
+                        为什么用熵权法？
+                    </h3>
+                    <p class="text-slate-600 text-sm leading-relaxed relative z-10 mb-4">
+                        在多指标综合评价中，权重的确定极大地影响最终结果。主观赋权法（如德尔菲法、AHP）容易受人为因素干扰。<strong>熵权法 (Entropy Weight Method, EWM)</strong> 是一种客观赋权方法。它基于信息论，认为指标数据的变异程度越大（信息熵越小），其包含的信息量越大，对综合评价的贡献也就越大，因而应赋予更高的权重。采用熵权法可以<strong>最大程度地避免主观偏见，让数据本身“说话”</strong>。
+                    </p>
+                    <!-- 参考文献长条 -->
+                    <div class="relative z-10 w-full flex items-center justify-start gap-2 px-4 py-2.5 bg-indigo-50 text-indigo-700 text-xs rounded-lg border border-indigo-100 cursor-default hover:bg-indigo-100 transition-colors">
+                        <i data-lucide="book-check" class="w-4 h-4 shrink-0"></i>
+                        <span class="truncate" data-ref="ref-entropy-theory"></span>
+                    </div>
+                </div>
+
+                <!-- Theory -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+                    <h3 class="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <span class="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span>
+                        熵权法的理论说明
+                    </h3>
+                    <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                        假设有 \( n \) 个评价对象（如月份），\( m \) 个评价指标。具体步骤如下：
+                    </p>
+                    <div class="bg-slate-50 p-4 rounded-lg text-sm text-slate-700 space-y-4">
+                        <div>
+                            <strong>(1) 计算特征比重：</strong> 计算第 \( i \) 个样本在第 \( j \) 项指标下的特征比重 \( p_{ij} \)。
+                            <div class="math-block">
+                                \[ p_{ij} = \frac{x_{ij}}{\sum_{i=1}^{n} x_{ij}} \quad (x_{ij} \text{ 为归一化后的数据}) \]
+                            </div>
+                        </div>
+                        <div>
+                            <strong>(2) 计算信息熵：</strong> 计算第 \( j \) 项指标的信息熵 \( e_j \)。
+                            <div class="math-block">
+                                \[ e_j = -k \sum_{i=1}^{n} p_{ij} \ln(p_{ij}) \quad \text{其中 } k = \frac{1}{\ln(n)} \]
+                            </div>
+                            <span class="text-xs text-slate-500">注：若 \( p_{ij}=0 \)，则规定 \( p_{ij}\ln(p_{ij}) = 0 \)。</span>
+                        </div>
+                        <div>
+                            <strong>(3) 计算信息效用值与权重：</strong> 信息效用值 \( d_j = 1 - e_j \)。权重 \( W_j \) 为该指标效用值在所有指标总效用值中的占比。
+                            <div class="math-block">
+                                \[ W_j = \frac{1 - e_j}{\sum_{j=1}^{m} (1 - e_j)} \]
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 交互式示例动画演示 (更新为 3x12) -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
+                        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <span class="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">3</span>
+                            熵权法交互演示：数据波动如何决定权重？
+                        </h3>
+                        <button onclick="startEntropyDemo()" id="startDemoBtn" class="shrink-0 px-4 py-2 bg-secondary text-white text-sm font-semibold rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2 shadow-sm">
+                            <i data-lucide="play-circle" class="w-4 h-4"></i> 播放演示动画
+                        </button>
+                    </div>
+                    
+                    <p class="text-slate-600 text-sm leading-relaxed mb-6">
+                        假设我们评估 <strong>1-12 月</strong>的基础设施韧性，包含三个不同特性的指标。点击演示，观察熵权法如何将“拉开差距”的能力量化为最终权重。
+                    </p>
+
+                    <!-- 动画容器 -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 md:p-6 relative overflow-hidden" id="demoContainer">
+                        
+                        <!-- 步骤指示器 -->
+                        <div class="flex justify-between items-center mb-8 relative px-4 md:px-12">
+                            <div class="absolute left-4 right-4 md:left-12 md:right-12 top-1/2 h-0.5 bg-slate-200 -z-10 -translate-y-1/2"></div>
+                            <div id="step1Indicator" class="bg-white border-2 border-slate-300 text-slate-500 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm z-10 transition-colors">1</div>
+                            <div id="step2Indicator" class="bg-white border-2 border-slate-300 text-slate-500 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm z-10 transition-colors">2</div>
+                            <div id="step3Indicator" class="bg-white border-2 border-slate-300 text-slate-500 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm z-10 transition-colors">3</div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <!-- 指标 A 区域 -->
+                            <div class="border border-blue-100 bg-white rounded-lg p-4 shadow-sm relative">
+                                <h4 class="text-center font-bold text-blue-700 mb-3 pb-2 border-b border-blue-50 flex flex-col">
+                                    <span>指标 A</span>
+                                    <span class="text-xs font-normal text-blue-500 mt-0.5">波动剧烈</span>
+                                </h4>
+                                
+                                <!-- Step 1 -->
+                                <div id="demoStep1A" class="mb-3 transition-opacity duration-500">
+                                    <div class="text-[11px] text-slate-500 mb-1.5 font-semibold">Step 1: 1-12月数据采集</div>
+                                    <div class="grid grid-cols-4 gap-1 bg-blue-50/50 p-2 rounded border border-blue-100 font-mono text-[10px] text-center">
+                                        <span class="demo-val-a text-blue-700">0.10</span><span class="demo-val-a text-blue-700">0.90</span><span class="demo-val-a text-blue-700">0.20</span><span class="demo-val-a text-blue-700">0.85</span>
+                                        <span class="demo-val-a text-blue-700">0.15</span><span class="demo-val-a text-blue-700">0.95</span><span class="demo-val-a text-blue-700">0.05</span><span class="demo-val-a text-blue-700">0.80</span>
+                                        <span class="demo-val-a text-blue-700">0.30</span><span class="demo-val-a text-blue-700">0.70</span><span class="demo-val-a text-blue-700">0.10</span><span class="demo-val-a text-blue-700">0.90</span>
+                                    </div>
+                                    <div class="text-[10px] text-center text-slate-400 mt-1">方差极大，数据混乱</div>
+                                </div>
+
+                                <!-- Step 2 -->
+                                <div id="demoStep2A" class="mb-3 opacity-30 transition-opacity duration-500">
+                                    <div class="text-[11px] text-slate-500 mb-1.5 font-semibold">Step 2: 计算信息熵 (\(e\))</div>
+                                    <div class="bg-slate-50 p-2 rounded border border-slate-100 flex items-center justify-between">
+                                        <span class="text-[10px] text-slate-500">混乱度高 = 蕴含新信息多</span>
+                                        <span class="font-mono font-bold text-slate-700 text-sm" id="entropyA">?</span>
+                                    </div>
+                                </div>
+
+                                <!-- Step 3 -->
+                                <div id="demoStep3A" class="opacity-30 transition-opacity duration-500">
+                                    <div class="text-[11px] text-slate-500 mb-1.5 font-semibold">Step 3: 最终生成权重</div>
+                                    <div class="h-5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200 relative">
+                                        <div id="weightBarA" class="h-full bg-blue-500 progress-bar-fill w-0 flex items-center justify-end pr-2">
+                                            <span class="text-white text-[10px] font-bold" id="weightValA"></span>
+                                        </div>
+                                    </div>
+                                    <div class="text-[11px] text-center text-blue-600 mt-1.5 font-semibold" id="conclusionA">拉开差距能力极强</div>
+                                </div>
+                            </div>
+
+                            <!-- 指标 B 区域 -->
+                            <div class="border border-teal-100 bg-white rounded-lg p-4 shadow-sm relative">
+                                <h4 class="text-center font-bold text-teal-700 mb-3 pb-2 border-b border-teal-50 flex flex-col">
+                                    <span>指标 B</span>
+                                    <span class="text-xs font-normal text-teal-500 mt-0.5">波动中等</span>
+                                </h4>
+                                
+                                <!-- Step 1 -->
+                                <div id="demoStep1B" class="mb-3 transition-opacity duration-500">
+                                    <div class="text-[11px] text-slate-500 mb-1.5 font-semibold">Step 1: 1-12月数据采集</div>
+                                    <div class="grid grid-cols-4 gap-1 bg-teal-50/50 p-2 rounded border border-teal-100 font-mono text-[10px] text-center">
+                                        <span class="demo-val-b text-teal-700">0.50</span><span class="demo-val-b text-teal-700">0.55</span><span class="demo-val-b text-teal-700">0.45</span><span class="demo-val-b text-teal-700">0.60</span>
+                                        <span class="demo-val-b text-teal-700">0.40</span><span class="demo-val-b text-teal-700">0.55</span><span class="demo-val-b text-teal-700">0.50</span><span class="demo-val-b text-teal-700">0.65</span>
+                                        <span class="demo-val-b text-teal-700">0.35</span><span class="demo-val-b text-teal-700">0.50</span><span class="demo-val-b text-teal-700">0.45</span><span class="demo-val-b text-teal-700">0.55</span>
+                                    </div>
+                                    <div class="text-[10px] text-center text-slate-400 mt-1">方差适中，存在一定区分度</div>
+                                </div>
+
+                                <!-- Step 2 -->
+                                <div id="demoStep2B" class="mb-3 opacity-30 transition-opacity duration-500">
+                                    <div class="text-[11px] text-slate-500 mb-1.5 font-semibold">Step 2: 计算信息熵 (\(e\))</div>
+                                    <div class="bg-slate-50 p-2 rounded border border-slate-100 flex items-center justify-between">
+                                        <span class="text-[10px] text-slate-500">信息量一般</span>
+                                        <span class="font-mono font-bold text-slate-700 text-sm" id="entropyB">?</span>
+                                    </div>
+                                </div>
+
+                                <!-- Step 3 -->
+                                <div id="demoStep3B" class="opacity-30 transition-opacity duration-500">
+                                    <div class="text-[11px] text-slate-500 mb-1.5 font-semibold">Step 3: 最终生成权重</div>
+                                    <div class="h-5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200 relative">
+                                        <div id="weightBarB" class="h-full bg-teal-500 progress-bar-fill w-0 flex items-center justify-end pr-2">
+                                            <span class="text-white text-[10px] font-bold" id="weightValB"></span>
+                                        </div>
+                                    </div>
+                                    <div class="text-[11px] text-center text-teal-600 mt-1.5 font-semibold" id="conclusionB">获得中等权重</div>
+                                </div>
+                            </div>
+
+                            <!-- 指标 C 区域 -->
+                            <div class="border border-slate-200 bg-white rounded-lg p-4 shadow-sm relative">
+                                <h4 class="text-center font-bold text-slate-600 mb-3 pb-2 border-b border-slate-100 flex flex-col">
+                                    <span>指标 C</span>
+                                    <span class="text-xs font-normal text-slate-400 mt-0.5">几乎不变</span>
+                                </h4>
+                                
+                                <!-- Step 1 -->
+                                <div id="demoStep1C" class="mb-3 transition-opacity duration-500">
+                                    <div class="text-[11px] text-slate-500 mb-1.5 font-semibold">Step 1: 1-12月数据采集</div>
+                                    <div class="grid grid-cols-4 gap-1 bg-slate-50 p-2 rounded border border-slate-100 font-mono text-[10px] text-center">
+                                        <span class="demo-val-c text-slate-600">0.80</span><span class="demo-val-c text-slate-600">0.81</span><span class="demo-val-c text-slate-600">0.79</span><span class="demo-val-c text-slate-600">0.80</span>
+                                        <span class="demo-val-c text-slate-600">0.81</span><span class="demo-val-c text-slate-600">0.80</span><span class="demo-val-c text-slate-600">0.79</span><span class="demo-val-c text-slate-600">0.80</span>
+                                        <span class="demo-val-c text-slate-600">0.81</span><span class="demo-val-c text-slate-600">0.80</span><span class="demo-val-c text-slate-600">0.79</span><span class="demo-val-c text-slate-600">0.80</span>
+                                    </div>
+                                    <div class="text-[10px] text-center text-slate-400 mt-1">方差极小，数据“死水一潭”</div>
+                                </div>
+
+                                <!-- Step 2 -->
+                                <div id="demoStep2C" class="mb-3 opacity-30 transition-opacity duration-500">
+                                    <div class="text-[11px] text-slate-500 mb-1.5 font-semibold">Step 2: 计算信息熵 (\(e\))</div>
+                                    <div class="bg-slate-50 p-2 rounded border border-slate-100 flex items-center justify-between">
+                                        <span class="text-[10px] text-slate-500">无新信息提供 (熵近乎1)</span>
+                                        <span class="font-mono font-bold text-slate-700 text-sm" id="entropyC">?</span>
+                                    </div>
+                                </div>
+
+                                <!-- Step 3 -->
+                                <div id="demoStep3C" class="opacity-30 transition-opacity duration-500">
+                                    <div class="text-[11px] text-slate-500 mb-1.5 font-semibold">Step 3: 最终生成权重</div>
+                                    <div class="h-5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200 relative">
+                                        <div id="weightBarC" class="h-full bg-slate-400 progress-bar-fill w-0 flex items-center justify-end pr-2">
+                                            <span class="text-white text-[10px] font-bold" id="weightValC"></span>
+                                        </div>
+                                    </div>
+                                    <div class="text-[11px] text-center text-slate-500 mt-1.5 font-semibold" id="conclusionC">无区分度，权重极低。</div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comprehensive Weighting Method -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+                    <h3 class="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <span class="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">4</span>
+                        引入综合赋权法（修正极端偏差）
+                    </h3>
+                    <p class="text-slate-600 text-sm leading-relaxed mb-5">
+                        虽然熵权法客观严谨，但它存在一个极端情况：如果某项指标非常重要（如“预测值特征列”、“各独立课题韧性”），但其数值极其稳定（方差接近0，如上方的<strong>指标 C</strong>），熵权法会判定其权重为 0 或接近 0。这显然不符合实际业务逻辑。<br>
+                        为了解决这一问题，我们引入了<strong>综合赋权法</strong>，以平衡数据的“波动性”与指标的“基础重要性”。
+                    </p>
+                    
+                    <div class="space-y-6">
+                        <!-- 4.1 算法逻辑 -->
+                        <div class="bg-slate-50 p-5 rounded-lg border border-slate-100">
+                            <h4 class="font-semibold text-slate-800 mb-3 text-sm flex items-center gap-2">
+                                <i data-lucide="function-square" class="w-4 h-4 text-primary"></i> 4.1 算法逻辑
+                            </h4>
+                            <p class="text-slate-600 text-sm mb-3">我们将熵权法得出的权重与平均权重（假设各指标同等重要）相结合：</p>
+                            <div class="math-block bg-white p-3 rounded border border-slate-200 flex justify-center text-sm mb-3 shadow-sm">
+                                \[ W_{combined} = \lambda \cdot W_{entropy} + (1 - \lambda) \cdot W_{equal} \]
+                            </div>
+                            <p class="text-slate-600 text-sm">在本模型中，我们取 \( \lambda = 0.5 \)，即熵权权重与平均权重各占 50%。</p>
+                        </div>
+
+                        <!-- 4.2 科学依据 -->
+                        <div>
+                            <h4 class="font-semibold text-slate-800 mb-3 text-sm flex items-center gap-2">
+                                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i> 4.2 为什么这样做更科学？
+                            </h4>
+                            <ul class="space-y-3 text-sm text-slate-600">
+                                <li class="flex items-start gap-3">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-secondary mt-1.5 shrink-0"></div>
+                                    <div><strong class="text-slate-800">修正极端偏差：</strong>即使某指标数值完全不变导致其信息熵趋于极大（\(W_{entropy} \approx 0\)），它依然能获得 \(0.5 \times W_{equal}\) 的基础权重，确保其在评价体系中不缺席。</div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-secondary mt-1.5 shrink-0"></div>
+                                    <div><strong class="text-slate-800">兼顾客观与公平：</strong>既保留了数据波动带来的敏锐度（由客观熵权贡献），又体现了多维度指标体系设计的整体均衡性（由均权贡献）。</div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-secondary mt-1.5 shrink-0"></div>
+                                    <div><strong class="text-slate-800">增强鲁棒性：</strong>这种混合模型比单一的客观赋权法更加稳健，不易受单一数据序列异常波动的剧烈影响。</div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // 初始化参考文献
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('[data-ref]').forEach(el => {
+                const refKey = el.getAttribute('data-ref');
+                if (references[refKey]) {
+                    el.innerText = references[refKey];
+                }
+            });
+        });
+
+        // 初始化 Lucide Icons
+        lucide.createIcons();
+
+        // 导航栏标签页切换功能 (Single Page Application 模式)
+        function switchTab(sectionId, element) {
+            // 隐藏所有板块
+            document.querySelectorAll('.tab-content').forEach(sec => {
+                sec.classList.remove('block');
+                sec.classList.add('hidden');
+            });
+            
+            // 显示目标板块
+            const target = document.getElementById(sectionId);
+            if(target) {
+                target.classList.remove('hidden');
+                target.classList.add('block');
+            }
+
+            // 更新导航栏激活样式
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('bg-blue-50', 'text-primary', 'font-semibold');
+                link.classList.add('text-slate-600', 'font-medium');
+            });
+            
+            // 给当前点击的导航附加高亮
+            if(element) {
+                element.classList.remove('text-slate-600', 'font-medium');
+                element.classList.add('bg-blue-50', 'text-primary', 'font-semibold');
+            }
+        }
+
+        // 板块五：计算演示动画功能
+        function showCalcDemo(month, v1, v2, v3, result, rowElement) {
+            // 1. 高亮当前点击的表格行
+            document.querySelectorAll('.calc-row').forEach(row => {
+                row.classList.remove('bg-blue-50', 'ring-2', 'ring-primary', 'ring-inset');
+            });
+            rowElement.classList.add('bg-blue-50', 'ring-2', 'ring-primary', 'ring-inset');
+
+            // 2. 填充数据到面板
+            document.getElementById('demo-month').innerText = month;
+            document.getElementById('demo-v1').innerText = v1.toFixed(2);
+            document.getElementById('demo-v2').innerText = v2.toFixed(2);
+            document.getElementById('demo-v3').innerText = v3.toFixed(2);
+            
+            // 添加数字跳动效果
+            let resultEl = document.getElementById('demo-result');
+            resultEl.innerText = "0.00";
+            setTimeout(() => {
+                resultEl.innerText = result.toFixed(2);
+                resultEl.classList.add('text-green-400');
+                setTimeout(()=> resultEl.classList.remove('text-green-400'), 300);
+            }, 150);
+
+            // 3. 显示动画面板
+            const panel = document.getElementById('calc-demo-panel');
+            panel.classList.remove('hidden');
+            void panel.offsetWidth; 
+            panel.classList.remove('opacity-0', 'translate-y-4');
+            panel.classList.add('opacity-100', 'translate-y-0');
+        }
+
+        // 板块六：计算演示动画功能
+        function showCalcDemo6(month, v1, v2, v3, v4, result, rowElement) {
+            // 1. 高亮当前点击的表格行
+            document.querySelectorAll('.calc-row-6').forEach(row => {
+                row.classList.remove('bg-indigo-50', 'ring-2', 'ring-primary', 'ring-inset');
+            });
+            rowElement.classList.add('bg-indigo-50', 'ring-2', 'ring-primary', 'ring-inset');
+
+            // 2. 填充数据到面板
+            document.getElementById('demo6-month').innerText = month;
+            document.getElementById('demo6-v1').innerText = v1.toFixed(2);
+            document.getElementById('demo6-v2').innerText = v2.toFixed(2);
+            document.getElementById('demo6-v3').innerText = v3.toFixed(2);
+            document.getElementById('demo6-v4').innerText = v4.toFixed(2);
+            
+            // 简单的数字跳动效果
+            let resultEl = document.getElementById('demo6-result');
+            resultEl.innerText = "0.00";
+            setTimeout(() => {
+                resultEl.innerText = result.toFixed(2);
+                resultEl.classList.add('text-green-400');
+                setTimeout(()=> resultEl.classList.remove('text-green-400'), 300);
+            }, 150);
+
+            // 3. 显示动画面板
+            const panel = document.getElementById('calc-demo-panel-6');
+            panel.classList.remove('hidden');
+            void panel.offsetWidth; 
+            panel.classList.remove('opacity-0', 'translate-y-4');
+            panel.classList.add('opacity-100', 'translate-y-0');
+        }
+        
+        // 板块七：熵权法步骤动画演示 (更新为 3x12)
+        let demoRunning = false;
+        function startEntropyDemo() {
+            if(demoRunning) return;
+            demoRunning = true;
+            
+            const btn = document.getElementById('startDemoBtn');
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 演示中...';
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+            lucide.createIcons(); // 刷新图标
+            
+            // 重置状态
+            resetDemo();
+            
+            // Step 1: 强调数据
+            setTimeout(() => {
+                activateStep(1);
+                highlightAllVals();
+            }, 500);
+
+            // Step 2: 计算信息熵
+            setTimeout(() => {
+                removeHighlightAllVals();
+                activateStep(2);
+                document.getElementById('demoStep2A').classList.remove('opacity-30');
+                document.getElementById('demoStep2B').classList.remove('opacity-30');
+                document.getElementById('demoStep2C').classList.remove('opacity-30');
+                
+                // 模拟计算过程
+                let counter = 0;
+                let interval = setInterval(() => {
+                    document.getElementById('entropyA').innerText = (Math.random()).toFixed(3);
+                    document.getElementById('entropyB').innerText = (0.4 + Math.random()*0.3).toFixed(3);
+                    document.getElementById('entropyC').innerText = (0.9 + Math.random()*0.1).toFixed(3);
+                    counter++;
+                    if(counter > 10) {
+                        clearInterval(interval);
+                        document.getElementById('entropyA').innerText = "0.825"; // 熵最小
+                        document.getElementById('entropyB').innerText = "0.965"; // 熵中等
+                        document.getElementById('entropyC').innerText = "0.999"; // 熵极大
+                        
+                        document.getElementById('entropyA').classList.add('text-red-500');
+                        document.getElementById('entropyA').classList.remove('text-slate-700');
+                    }
+                }, 50);
+            }, 2500);
+
+            // Step 3: 分配权重
+            setTimeout(() => {
+                activateStep(3);
+                document.getElementById('demoStep3A').classList.remove('opacity-30');
+                document.getElementById('demoStep3B').classList.remove('opacity-30');
+                document.getElementById('demoStep3C').classList.remove('opacity-30');
+                
+                // 权重条动画
+                setTimeout(() => {
+                    // W_j = (1-e_j)/Sum(1-e_j) -> (0.175, 0.035, 0.001) => ~83%, ~16%, ~1%
+                    const barA = document.getElementById('weightBarA');
+                    const barB = document.getElementById('weightBarB');
+                    const barC = document.getElementById('weightBarC');
+                    
+                    barA.style.width = '83%';
+                    document.getElementById('weightValA').innerText = '83%';
+                    
+                    barB.style.width = '16%';
+                    document.getElementById('weightValB').innerText = '16%';
+
+                    barC.style.width = '3%'; // 显示上给个最小宽度保证可见
+                    document.getElementById('weightValC').innerText = '1%';
+                    
+                    // 演示结束
+                    setTimeout(() => {
+                        btn.innerHTML = '<i data-lucide="rotate-ccw" class="w-4 h-4"></i> 重新演示';
+                        btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                        lucide.createIcons();
+                        demoRunning = false;
+                    }, 1000);
+                    
+                }, 100);
+            }, 4500);
+        }
+        
+        function activateStep(stepNum) {
+            document.querySelectorAll('[id^="step"]').forEach(el => {
+                if(el.id.includes('Indicator')) {
+                    el.classList.remove('step-active', 'text-primary');
+                }
+            });
+            const activeIndicator = document.getElementById(`step${stepNum}Indicator`);
+            activeIndicator.classList.add('step-active', 'text-primary');
+        }
+        
+        function highlightAllVals() {
+            document.querySelectorAll('.demo-val-a, .demo-val-b, .demo-val-c').forEach(el => {
+                el.classList.add('val-highlight');
+            });
+        }
+        
+        function removeHighlightAllVals() {
+            document.querySelectorAll('.demo-val-a, .demo-val-b, .demo-val-c').forEach(el => {
+                el.classList.remove('val-highlight');
+            });
+        }
+        
+        function resetDemo() {
+            // 重置步骤指示器
+            document.querySelectorAll('[id^="step"]').forEach(el => {
+                if(el.id.includes('Indicator')) el.classList.remove('step-active', 'text-primary');
+            });
+            
+            // 重置不透明度
+            document.getElementById('demoStep2A').classList.add('opacity-30');
+            document.getElementById('demoStep2B').classList.add('opacity-30');
+            document.getElementById('demoStep2C').classList.add('opacity-30');
+            document.getElementById('demoStep3A').classList.add('opacity-30');
+            document.getElementById('demoStep3B').classList.add('opacity-30');
+            document.getElementById('demoStep3C').classList.add('opacity-30');
+            
+            // 重置数值
+            document.getElementById('entropyA').innerText = "?";
+            document.getElementById('entropyA').classList.remove('text-red-500');
+            document.getElementById('entropyA').classList.add('text-slate-700');
+            document.getElementById('entropyB').innerText = "?";
+            document.getElementById('entropyC').innerText = "?";
+            
+            // 重置进度条
+            document.getElementById('weightBarA').style.width = '0%';
+            document.getElementById('weightValA').innerText = '';
+            document.getElementById('weightBarB').style.width = '0%';
+            document.getElementById('weightValB').innerText = '';
+            document.getElementById('weightBarC').style.width = '0%';
+            document.getElementById('weightValC').innerText = '';
+        }
+    </script>
+</body>
+</html>
