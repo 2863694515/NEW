@@ -32,16 +32,16 @@
         // 参考文献配置区 - 统一在此处修改参考文献内容
         // ==========================================
         const references = {
-            "ref-comm-density": "文献支撑: 待补充",
-            "ref-gas-buffer": "文献支撑: 待补充",
-            "ref-rail-transit": "文献支撑: 待补充",
-            "ref-traffic-activity": "文献支撑: 待补充",
-            "ref-flood-recovery": "文献支撑: 待补充",
-            "ref-inundation-depth": "文献支撑: 待补充",
-            "ref-health-resource": "文献支撑: 待补充",
-            "ref-health-manage": "文献支撑: 待补充",
+            "ref-comm-density": "文献支撑: Bengtsson L, Lu X, Thorson A, et al. Improved response to disasters and outbreaks by tracking population movements with mobile phone network data: a post-earthquake geospatial study in Haiti[J]. PLoS medicine, 2011, 8(8): e1001083.",
+            "ref-gas-buffer": "文献支撑: Liu W, Song Z. Review of studies on the resilience of urban critical infrastructure networks[J]. Reliability Engineering & System Safety, 2020, 193: 106617.",
+            "ref-rail-transit": "文献支撑: Lu Q C. Modeling network resilience of rail transit under operational incidents[J]. Transportation Research Part A: Policy and Practice, 2018, 117: 227-237.",
+            "ref-traffic-activity": "文献支撑: Yang H, Dijst M, Witte P, et al. Comparing passenger flow and time schedule data to analyse High-Speed Railways and urban networks in China[J]. Urban Studies, 2019, 56(6): 1267-1287.",
+            "ref-flood-recovery": "文献支撑:Bertilsson L, Wiklund K, de Moura Tebaldi I, et al. Urban flood resilience–A multi-criteria index to integrate flood resilience into urban planning[J]. Journal of hydrology, 2019, 573: 970-982.",
+            "ref-inundation-depth": "文献支撑: Wu Z, Zhou Y, Wang H. Real-time prediction of the water accumulation process of urban stormy accumulation points based on deep learning[J]. IEEE access, 2020, 8: 151938-151951.",
+            "ref-health-resource": "文献支撑: Ardakani E S, Larimi N G, Nejad M O, et al. A resilient, robust transformation of healthcare systems to cope with COVID-19 through alternative resources[J]. Omega, 2023, 114: 102750.",
+            "ref-health-manage": "文献支撑: Tippong D, Petrovic S, Akbari V. A review of applications of operational research in healthcare coordination in disaster management[J]. European Journal of Operational Research, 2022, 301(1): 1-17.",
             "ref-exp-normalization": "参考文献: Epasto A, Mahdian M, Mirrokni V, et al. Optimal approximation-smoothness tradeoffs for soft-max functions[J]. Advances in Neural Information Processing Systems, 2020, 33: 2651-2660.",
-            "ref-entropy-theory": "参考文献: 待补充"
+            "ref-entropy-theory": "参考文献: Lu H, Lu X, Jiao L, et al. Evaluating urban agglomeration resilience to disaster in the Yangtze Delta city group in China[J]. Sustainable Cities and Society, 2022, 76: 103464."
         };
         // ==========================================
     </script>
@@ -93,6 +93,33 @@
         }
         .progress-bar-fill {
             transition: width 0.8s ease-in-out, background-color 0.8s ease;
+        }
+
+        /* 参考文献文本完整显示（修复截断问题） */
+        [data-ref] {
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: unset !important;
+            word-break: break-word;
+            line-height: 1.5;
+        }
+        [data-ref].truncate {
+            display: block;
+        }
+        /* 参考文献所在 flex 容器：图标顶部对齐 + 允许多行 */
+        [data-ref].truncate ~ i[data-lucide],
+        i[data-lucide="book-check"] {
+            flex-shrink: 0;
+            align-self: flex-start;
+            margin-top: 2px;
+        }
+        /* 指标卡片底部增加空间容纳多行参考文献 */
+        .border.border-slate-100.rounded-lg.relative.pb-14 {
+            padding-bottom: 7rem !important;
+        }
+        /* exp-normalization 所在卡片 */
+        .bg-white.relative.overflow-hidden.pb-14 {
+            padding-bottom: 7rem !important;
         }
         
         /* 背景图片样式 */
@@ -1243,6 +1270,7 @@
                 const refKey = el.getAttribute('data-ref');
                 if (references[refKey]) {
                     el.innerText = references[refKey];
+                    el.title = references[refKey]; // 悬停时显示完整文本
                 }
             });
         });
